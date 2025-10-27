@@ -1,0 +1,18 @@
+# Virtual Environment
+venv/
+.venv/
+
+# Python cache and artifacts
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# IDE-specific files
+.vscode/
+.idea/
+.DS_Store
+
+# Environment variables - NEVER commit secrets
+.env

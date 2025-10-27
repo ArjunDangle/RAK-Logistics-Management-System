@@ -1,0 +1,19 @@
+[project]
+name = "lms_backend"
+version = "0.1.0"
+description = "Logistics Management System Backend"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlmodel",
+    "alembic",
+    "pydantic-settings",
+    "psycopg[binary]",
+    "python-dotenv",
+    "psycopg2-binary",
+    "python-jose[cryptography]", # For handling JSON Web Tokens (JWT)
+    "passlib[bcrypt]",         # For hashing passwords
+]
+
+[tool.setuptools]
+packages = ["app"]
