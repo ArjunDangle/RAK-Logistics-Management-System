@@ -5,9 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
+import { ConcernsTable } from "@/features/concerns/components/ConcernsTable";
+import { ConcernForm } from "@/features/concerns/components/ConcernForm";
+import { useGetConcernsByOrderId, useCreateConcern } from "@/features/concerns/useConcerns";
+import { useAuthStore } from "@/features/authentication/useAuthStore";
 
 const initialOrders = [
   { id: 1, soNumber: "SO-2024-001", orderDate: "2024-01-15", customer: "Acme Corp", source: "Website", status: "Pending", tracking: "-", salesperson: "John Doe" },
@@ -22,6 +27,11 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<typeof initialOrders[0] | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateConcernOpen, setIsCreateConcernOpen] = useState(false);
+  
+  const { userName } = useAuthStore();
+  const { data: concerns } = useGetConcernsByOrderId(selectedOrder?.id.toString() || "");
+  const createConcernMutation = useCreateConcern();
 
   const filteredOrders = orders.filter(
     (order) =>
@@ -34,6 +44,25 @@ const Orders = () => {
     e.preventDefault();
     toast.success("Order created successfully!");
     setIsCreateOpen(false);
+  };
+
+  const handleCreateConcern = (data: { issueType: any; logisticsNotes: string }) => {
+    if (!selectedOrder) return;
+    
+    createConcernMutation.mutate(
+      {
+        orderId: selectedOrder.id.toString(),
+        orderNumber: selectedOrder.soNumber,
+        issueType: data.issueType,
+        logisticsNotes: data.logisticsNotes,
+        createdByName: userName || "Current User",
+      },
+      {
+        onSuccess: () => {
+          setIsCreateConcernOpen(false);
+        },
+      }
+    );
   };
 
   return (
@@ -136,68 +165,112 @@ const Orders = () => {
 
       {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order Details - {selectedOrder?.soNumber}</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold mb-3">Customer Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Customer:</span>
-                    <p className="font-medium">{selectedOrder.customer}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Order Date:</span>
-                    <p className="font-medium">{selectedOrder.orderDate}</p>
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Order Details</TabsTrigger>
+                <TabsTrigger value="concerns">
+                  Support Concerns {concerns && concerns.length > 0 && `(${concerns.length})`}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Customer Details</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Customer:</span>
+                      <p className="font-medium">{selectedOrder.customer}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Order Date:</span>
+                      <p className="font-medium">{selectedOrder.orderDate}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <h3 className="text-sm font-semibold mb-3">Shipment Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="courier">Courier</Label>
-                    <Input id="courier" defaultValue="FedEx" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tracking">Tracking Number</Label>
-                    <Input id="tracking" defaultValue={selectedOrder.tracking} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="shipDate">Ship Date</Label>
-                    <Input id="shipDate" type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="packages">Package Count</Label>
-                    <Input id="packages" type="number" defaultValue="1" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="weight">Gross Weight (kg)</Label>
-                    <Input id="weight" type="number" step="0.01" defaultValue="2.5" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="volume">Volume Weight (kg)</Label>
-                    <Input id="volume" type="number" step="0.01" defaultValue="3.0" />
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Shipment Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="courier">Courier</Label>
+                      <Input id="courier" defaultValue="FedEx" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tracking">Tracking Number</Label>
+                      <Input id="tracking" defaultValue={selectedOrder.tracking} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shipDate">Ship Date</Label>
+                      <Input id="shipDate" type="date" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="packages">Package Count</Label>
+                      <Input id="packages" type="number" defaultValue="1" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="weight">Gross Weight (kg)</Label>
+                      <Input id="weight" type="number" step="0.01" defaultValue="2.5" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="volume">Volume Weight (kg)</Label>
+                      <Input id="volume" type="number" step="0.01" defaultValue="3.0" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setSelectedOrder(null)}>
-                  Close
-                </Button>
-                <Button onClick={() => {
-                  toast.success("Order updated successfully!");
-                  setSelectedOrder(null);
-                }}>
-                  Save Changes
-                </Button>
-              </div>
-            </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                    Close
+                  </Button>
+                  <Button onClick={() => {
+                    toast.success("Order updated successfully!");
+                    setSelectedOrder(null);
+                  }}>
+                    Save Changes
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="concerns" className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    Track support concerns for this order
+                  </p>
+                  <Dialog open={isCreateConcernOpen} onOpenChange={setIsCreateConcernOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create New Concern
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create Support Concern</DialogTitle>
+                      </DialogHeader>
+                      <ConcernForm
+                        orderNumber={selectedOrder.soNumber}
+                        onSubmit={handleCreateConcern}
+                        onCancel={() => setIsCreateConcernOpen(false)}
+                        isLoading={createConcernMutation.isPending}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <ConcernsTable concerns={concerns || []} />
+
+                <div className="flex justify-end pt-4 border-t">
+                  <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                    Close
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
