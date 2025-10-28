@@ -1,61 +1,61 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface AuthState {
-  token: string | null;
-  userRole: 'logistics' | 'support' | null;
-  userName: string | null;
-  login: (username: string, password: string, role: 'logistics' | 'support') => boolean;
-  logout: () => void;
-  isAuthenticated: () => boolean;
+// Define the structure for user data we'll store
+interface UserData {
+  role: 'logistics' | 'support';
+  name: string;
+  // Add other relevant user fields if needed, e.g., email, id
 }
 
-// Mock credentials for development only
-const MOCK_USERS = {
-  logistics: { username: 'logistics', password: 'logistics123', name: 'Logistics Team' },
-  support: { username: 'support', password: 'support123', name: 'Support Team' },
-};
+interface AuthState {
+  token: string | null;
+  user: UserData | null; // Store user details in an object
+  login: (token: string, userData: UserData) => void; // Updated login signature
+  logout: () => void;
+  isAuthenticated: () => boolean;
+  // Expose userRole and userName via selectors for easier access
+  userRole: () => 'logistics' | 'support' | null;
+  userName: () => string | null;
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       token: null,
-      userRole: null,
-      userName: null,
+      user: null, // Initialize user as null
 
-      login: (username: string, password: string, role: 'logistics' | 'support') => {
-        const user = MOCK_USERS[role];
-        
-        if (user && username === user.username && password === user.password) {
-          // Mock JWT token (just base64 encoded data for demo)
-          const mockToken = btoa(JSON.stringify({ role, username, name: user.name }));
-          
-          set({
-            token: mockToken,
-            userRole: role,
-            userName: user.name,
-          });
-          
-          return true;
-        }
-        
-        return false;
+      // NEW: login function only stores the provided token and user data
+      login: (token: string, userData: UserData) => {
+        set({
+          token: token,
+          user: userData,
+        });
       },
 
       logout: () => {
         set({
           token: null,
-          userRole: null,
-          userName: null,
+          user: null, // Clear user data on logout
         });
       },
 
       isAuthenticated: () => {
         return get().token !== null;
       },
+
+      // NEW: Selectors to get specific user properties
+      userRole: () => get().user?.role || null,
+      userName: () => get().user?.name || null,
     }),
     {
-      name: 'auth-storage',
+      name: 'auth-storage', // Keep the same storage key
+      // Optional: Store only the token and user in localStorage
+      // partialize: (state) => ({ token: state.token, user: state.user }),
     }
   )
 );
+
+// Optional but recommended: Export selectors for cleaner component usage
+export const useCurrentUserRole = () => useAuthStore((state) => state.userRole());
+export const useCurrentUserName = () => useAuthStore((state) => state.userName());
