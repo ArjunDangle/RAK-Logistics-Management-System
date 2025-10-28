@@ -23,6 +23,7 @@ export const LoginForm = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Marked the function as 'async' to use the 'await' keyword.
   const handleLogin = async (role: 'logistics' | 'support') => {
     setError('');
     setLoading(true);
@@ -33,13 +34,13 @@ export const LoginForm = () => {
       // Validate input
       loginSchema.parse(formData);
 
-      // Attempt login
-      const success = login(formData.username, formData.password, role);
+      // Await the result of the API call from the auth store.
+      const success = await login(formData.username, formData.password, role);
 
       if (success) {
         navigate('/');
       } else {
-        setError('Invalid credentials. Please try again.');
+        setError('Invalid credentials or role mismatch. Please try again.');
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -62,10 +63,10 @@ export const LoginForm = () => {
 
         <TabsContent value="logistics" className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="logistics-username">Username</Label>
+            <Label htmlFor="logistics-username">Username (Email)</Label>
             <Input
               id="logistics-username"
-              placeholder="Enter username"
+              placeholder="Enter email"
               value={logisticsForm.username}
               onChange={(e) => setLogisticsForm({ ...logisticsForm, username: e.target.value })}
               disabled={loading}
@@ -90,17 +91,14 @@ export const LoginForm = () => {
             <LogIn className="mr-2 h-4 w-4" />
             Sign In as Logistics
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Demo: logistics / logistics123
-          </p>
         </TabsContent>
 
         <TabsContent value="support" className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="support-username">Username</Label>
+            <Label htmlFor="support-username">Username (Email)</Label>
             <Input
               id="support-username"
-              placeholder="Enter username"
+              placeholder="Enter email"
               value={supportForm.username}
               onChange={(e) => setSupportForm({ ...supportForm, username: e.target.value })}
               disabled={loading}
@@ -125,9 +123,6 @@ export const LoginForm = () => {
             <LogIn className="mr-2 h-4 w-4" />
             Sign In as Support
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Demo: support / support123
-          </p>
         </TabsContent>
       </Tabs>
 

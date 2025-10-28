@@ -26,7 +26,7 @@ def upgrade() -> None:
     sa.Column('full_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('hashed_password', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('role', sa.Enum('LOGISTICS', 'SUPPORT', name='userrole'), nullable=False),
+    sa.Column('role', sa.Enum('logistics', 'support', name='userrole'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
